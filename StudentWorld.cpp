@@ -21,6 +21,11 @@ StudentWorld::~StudentWorld()
     cleanUp();
 }
 
+void StudentWorld::holywaterproj(int x, int y, int direction)
+{
+    actors.push_back(new HolyWaterProjectiles(x, y, direction, this, theGR));
+}
+
 void StudentWorld::setupBorderline()
 {
     int LEFT_EDGE = ROAD_CENTER - ROAD_WIDTH/2;
@@ -60,7 +65,6 @@ int StudentWorld::move()
     // This code is here merely to allow the game to build, run, and terminate after you hit enter.
     // Notice that the return value GWSTATUS_PLAYER_DIED will cause our framework to end the current level.
     
-    
     theGR->doSomething();
     for(list<Actor*>::iterator it=actors.begin(); it!=actors.end();)
     {
@@ -97,7 +101,7 @@ int StudentWorld::move()
     {
         actors.push_back(new BorderLine(IID_WHITE_BORDER_LINE, ROAD_CENTER - ROAD_WIDTH/2+ROAD_WIDTH/3, new_border_y, this, theGR));
         actors.push_back(new BorderLine(IID_WHITE_BORDER_LINE, ROAD_CENTER + ROAD_WIDTH/2-ROAD_WIDTH/3, new_border_y, this, theGR));
-        lastWhiteY=256;
+        lastWhiteY=248;
     }
     
     return GWSTATUS_CONTINUE_GAME;
