@@ -12,7 +12,8 @@ public:
     Actor(int imageID, double startX, double startY, int direction, double size, int depth,StudentWorld* myworld,int Yspeed, int Xspeed, bool value);
   //  virtual int move();
     virtual void doSomething();
-    void damaged(int damage);
+    void updateStatus(int hp=0,int water=0,int speed=0);
+    void checkOffScreen();
     bool isAlive();
     
     //Getters
@@ -45,8 +46,9 @@ public:
     GhostRacer(double startX, double startY,StudentWorld* myworld);
     virtual void doSomething();
     void move();
+    void swerveOff();
 private:
-    
+    StudentWorld* theworld;
 };
 
 
@@ -55,10 +57,19 @@ class BorderLine: public Actor
 public:
     BorderLine(int imageID, double startX, double startY, StudentWorld* myworld, GhostRacer* gh);
     virtual void doSomething();
-    
 private:
     GhostRacer* m_gH;
 };
+
+class HolyWaterProjectiles: public Actor
+{
+public:
+    HolyWaterProjectiles(double x, double y, int direction,StudentWorld* myworld, GhostRacer* gh);
+    virtual void doSomething();
+private:
+    GhostRacer* m_gh;
+};
+
 
 class ZombieCab: public Actor
 {
@@ -86,10 +97,6 @@ class OilSlicks
     
 };
 
-class HolyWaterProjectiles
-{
-    
-};
 
 
 
