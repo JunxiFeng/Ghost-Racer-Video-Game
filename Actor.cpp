@@ -18,9 +18,20 @@ StudentWorld* Actor::getWorld()
     return theworld;
 }
 
-void Actor::damaged(int damage)
+void Actor::updateStatus(int hp, int water, int speed)
 {
-    healthPoints=healthPoints-damage;
+    healthPoints=healthPoints+hp;
+    unitsofHolyWater=unitsofHolyWater+water;
+    vert_speed=vert_speed+speed;
+}
+
+void Actor::checkOffScreen()
+{
+    if(getX()<0 || getY()<0 || getX()>VIEW_WIDTH || getY()>VIEW_HEIGHT)
+    {
+       setAlive(false);
+        return;
+    }
 }
 
 bool Actor::isAlive()
@@ -74,45 +85,49 @@ GhostRacer::GhostRacer(double startX, double startY, StudentWorld* myworld): Act
 {
     sethealth(100);
     setHolyWater(10);
+    theworld=myworld;
 }
 
 void GhostRacer::move()
 {
     int max_shift_per_tick = 4.0;
     int direction=getDirection();
-    int radian=direction*M_PI/180;
-    int delta_x = cos(radian) * max_shift_per_tick;
-    int cur_x=getX();
-    int cur_y=getY();
-    if(getDirection()<90)
-        moveTo(cur_x+delta_x, cur_y);
-    else if(getDirection()>90)
-        moveTo(cur_x-delta_x, cur_y);
+    double delta_x = cos(direction*M_PI/180) * max_shift_per_tick;
+    double cur_x=getX();
+    double cur_y=getY();
+    moveTo(cur_x+delta_x, cur_y);
 }
 
-void GhostRacer::doSomething()
+void GhostRacer::swerveOff()
 {
-  //  Actor::doSomething();
     int LEFT_EDGE = ROAD_CENTER - ROAD_WIDTH/2;
     int RIGHT_EDGE = ROAD_CENTER + ROAD_WIDTH/2;
-    if(gethp()<=0)
-    {
-        setAlive(false);
-        return;
-    }
     if(getX()<=LEFT_EDGE || getX()>=RIGHT_EDGE)
     {
         if(getDirection()>90)
+        {
             setDirection(82);
+            move();
+        }
         else if(getDirection()<90)
         {
             setDirection(98);
             move();
         }
-        
-        damaged(10);
+        updateStatus(-10,0,0);
         getWorld()->playSound(SOUND_VEHICLE_CRASH);
     }
+}
+
+void GhostRacer::doSomething()
+{
+  //  Actor::doSomething();
+    if(gethp()<=0)
+    {
+        setAlive(false);
+        return;
+    }
+    swerveOff();
     int ch;
     if(getWorld()->getKey(ch))
     {
@@ -133,10 +148,25 @@ void GhostRacer::doSomething()
                 }
                 break;
             case KEY_PRESS_UP:
+                if(getVertSpeed()<5)
+                {
+                    updateStatus(0,0,1);
+                }
                 break;
             case KEY_PRESS_DOWN:
+                if(getVertSpeed()>-1)
+                {
+                    updateStatus(0,0,-1);
+                }
                 break;
             case KEY_PRESS_SPACE:
+                if(getHolyWater()>=1)
+                {
+                theworld->holywaterproj(getX()+cos(getDirection()*M_PI/180),getY()+sin(getDirection()*M_PI/180), getDirection());
+                    
+                    getWorld()->playSound(SOUND_PLAYER_SPRAY);
+                    updateStatus(0,-1,0);
+                }
                 break;
             case KEY_PRESS_TAB:
                 break;
@@ -155,8 +185,6 @@ BorderLine::BorderLine(int imageID, double startX, double startY, StudentWorld* 
     m_gH=gh;
 }
 
-
-
 void BorderLine::doSomething()
 {
     Actor::doSomething();
@@ -165,9 +193,23 @@ void BorderLine::doSomething()
     int new_y=getY()+vert_speed;
     int new_x=getX()+horiz_speed;
     moveTo(new_x, new_y);
-    if(getX()<0 || getY()<0 || getX()>VIEW_WIDTH || getY()>VIEW_HEIGHT)
-    {
-       setAlive(false);
+    checkOffScreen();
+}
+
+
+// //////////// Holy Water Projectile
+HolyWaterProjectiles::HolyWaterProjectiles(double x, double y, int direction,StudentWorld* myworld, GhostRacer* gh): Actor(IID_HOLY_WATER_PROJECTILE, x, y, direction,1.0, 1,myworld,0,0,true)
+{
+    m_gh=gh;
+}
+
+void HolyWaterProjectiles::doSomething()
+{
+    if(!isAlive())
         return;
-    }
+    moveForward(SPRITE_HEIGHT);
+    checkOffScreen();
+    int distance=sqrt(pow(getX()-m_gh->getX(), 2)+pow(getY()-m_gh->getY(), 2));
+    if(distance>160)
+        setAlive(false);
 }
