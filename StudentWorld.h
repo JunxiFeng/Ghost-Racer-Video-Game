@@ -19,6 +19,7 @@ public:
     virtual int move();
     virtual void cleanUp();
     void setupBorderline();
+    void holywaterproj(int x, int y, int direction);
 private:
     list<Actor*> actors;
     GhostRacer* theGR;
