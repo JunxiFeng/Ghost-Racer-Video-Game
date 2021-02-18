@@ -35,8 +35,8 @@ void StudentWorld::setupBorderline()
     {
         for(int j=0;j<=M-1;j++)
         {
-            actors.push_back(new BorderLine(IID_WHITE_BORDER_LINE,LEFT_EDGE + ROAD_WIDTH/3, j *(4*SPRITE_HEIGHT), this, theGR));
             actors.push_back(new BorderLine(IID_WHITE_BORDER_LINE,RIGHT_EDGE - ROAD_WIDTH/3, j *(4*SPRITE_HEIGHT), this, theGR));
+            actors.push_back(new BorderLine(IID_WHITE_BORDER_LINE,LEFT_EDGE + ROAD_WIDTH/3, j *(4*SPRITE_HEIGHT), this, theGR));
         }
     }
     //Yellow BorderLine
@@ -48,6 +48,57 @@ void StudentWorld::setupBorderline()
             actors.push_back(new BorderLine(IID_YELLOW_BORDER_LINE,RIGHT_EDGE,j * SPRITE_HEIGHT, this, theGR));
         }
     }
+}
+
+void StudentWorld::addnewBorderline()
+{
+    lastWhiteY = lastWhiteY -4- theGR->getVertSpeed();
+    
+    int new_border_y = VIEW_HEIGHT - SPRITE_HEIGHT;
+    int delta_y=new_border_y-lastWhiteY;
+    if(delta_y>=SPRITE_HEIGHT)
+    {
+        actors.push_back(new BorderLine(IID_YELLOW_BORDER_LINE,ROAD_CENTER - ROAD_WIDTH/2,new_border_y, this, theGR));
+        actors.push_back(new BorderLine(IID_YELLOW_BORDER_LINE, ROAD_CENTER + ROAD_WIDTH/2, new_border_y, this, theGR));
+    }
+    if(delta_y >= 4*SPRITE_HEIGHT)
+    {
+        actors.push_back(new BorderLine(IID_WHITE_BORDER_LINE, ROAD_CENTER - ROAD_WIDTH/2+ROAD_WIDTH/3, new_border_y, this, theGR));
+        actors.push_back(new BorderLine(IID_WHITE_BORDER_LINE, ROAD_CENTER + ROAD_WIDTH/2-ROAD_WIDTH/3, new_border_y, this, theGR));
+        lastWhiteY=248;
+    }
+}
+
+void StudentWorld::AlldoSomething()
+{
+    list<Actor*>::iterator it=actors.begin();
+    while(it!=actors.end())
+    {
+        if((*it)->isAlive())
+        {
+            (*it)->doSomething();
+            it++;
+        }
+        else
+            it++;
+    }
+}
+
+void StudentWorld::RemoveDead()
+{
+    list<Actor*>::iterator it2 = actors.begin();
+      while(it2!=actors.end())
+      {
+          if (!(*it2)->isAlive())
+          {
+              delete *it2;
+              auto toErase = it2;
+              it2++;
+              actors.erase(toErase);
+          }
+          else
+              it2++;
+      }
 }
 
 int StudentWorld::init()
@@ -68,48 +119,12 @@ int StudentWorld::move()
     theGR->doSomething();
     if(!theGR->isAlive())
     {
-        decLives();
+      //  decLives();
         return GWSTATUS_PLAYER_DIED;
     }
-    list<Actor*>::iterator it=actors.begin();
-    while(it!=actors.end())
-    {
-        if((*it)->isAlive())
-        {
-            (*it)->doSomething();
-            it++;
-        }
-        else
-            it++;
-    }
-    
-    list<Actor*>::iterator it2 = actors.begin();
-   while(it2!=actors.end())
-   {
-       if (!(*it2)->isAlive())
-       {
-           delete *it2;
-           it=actors.erase(it2);
-           it2++;
-       }
-       else
-           it2++;
-   }
-    lastWhiteY = lastWhiteY -4- theGR->getVertSpeed();
-    
-    int new_border_y = VIEW_HEIGHT - SPRITE_HEIGHT;
-    int delta_y=new_border_y-lastWhiteY;
-    if(delta_y>=SPRITE_HEIGHT)
-    {
-        actors.push_back(new BorderLine(IID_YELLOW_BORDER_LINE,ROAD_CENTER - ROAD_WIDTH/2,new_border_y, this, theGR));
-        actors.push_back(new BorderLine(IID_YELLOW_BORDER_LINE, ROAD_CENTER + ROAD_WIDTH/2, new_border_y, this, theGR));
-    }
-    if(delta_y >= 4*SPRITE_HEIGHT)
-    {
-        actors.push_back(new BorderLine(IID_WHITE_BORDER_LINE, ROAD_CENTER - ROAD_WIDTH/2+ROAD_WIDTH/3, new_border_y, this, theGR));
-        actors.push_back(new BorderLine(IID_WHITE_BORDER_LINE, ROAD_CENTER + ROAD_WIDTH/2-ROAD_WIDTH/3, new_border_y, this, theGR));
-        lastWhiteY=248;
-    }
+    AlldoSomething();
+    RemoveDead();
+    addnewBorderline();
     
     return GWSTATUS_CONTINUE_GAME;
 }
@@ -117,10 +132,12 @@ int StudentWorld::move()
 void StudentWorld::cleanUp()
 {
     delete theGR;
-    for (list<Actor*>::iterator it = actors.begin(); it != actors.end(); )
+    list<Actor*>::iterator it = actors.begin();
+    while(it!=actors.end())
     {
             delete *it;
-            it=actors.erase(it);
+            auto toErase = it;
             it++;
+            actors.erase(toErase);
     }
 }
