@@ -13,7 +13,7 @@ GameWorld* createStudentWorld(string assetPath)
 StudentWorld::StudentWorld(string assetPath)
 : GameWorld(assetPath)
 {
-   
+   // lastWhiteY=224;
 }
 
 StudentWorld::~StudentWorld()
@@ -52,9 +52,9 @@ void StudentWorld::setupBorderline()
 
 int StudentWorld::init()
 {
-    //actors.push_back(new GhostRacer(128,32,this));
-    theGR= new GhostRacer(128,32,this);
     lastWhiteY=224;
+    theGR= new GhostRacer(128,32,this);
+    
     setupBorderline();
     
     return GWSTATUS_CONTINUE_GAME;
@@ -66,7 +66,13 @@ int StudentWorld::move()
     // Notice that the return value GWSTATUS_PLAYER_DIED will cause our framework to end the current level.
     
     theGR->doSomething();
-    for(list<Actor*>::iterator it=actors.begin(); it!=actors.end();)
+    if(!theGR->isAlive())
+    {
+        decLives();
+        return GWSTATUS_PLAYER_DIED;
+    }
+    list<Actor*>::iterator it=actors.begin();
+    while(it!=actors.end())
     {
         if((*it)->isAlive())
         {
@@ -77,16 +83,17 @@ int StudentWorld::move()
             it++;
     }
     
-   for (list<Actor*>::iterator it = actors.begin(); it != actors.end(); )
+    list<Actor*>::iterator it2 = actors.begin();
+   while(it2!=actors.end())
    {
-       if (!(*it)->isAlive())
+       if (!(*it2)->isAlive())
        {
-           delete *it;
-           it=actors.erase(it);
-           it++;
+           delete *it2;
+           it=actors.erase(it2);
+           it2++;
        }
        else
-           it++;
+           it2++;
    }
     lastWhiteY = lastWhiteY -4- theGR->getVertSpeed();
     
@@ -105,8 +112,6 @@ int StudentWorld::move()
     }
     
     return GWSTATUS_CONTINUE_GAME;
-  //  decLives();
-  //  return GWSTATUS_PLAYER_DIED;
 }
 
 void StudentWorld::cleanUp()
@@ -114,14 +119,8 @@ void StudentWorld::cleanUp()
     delete theGR;
     for (list<Actor*>::iterator it = actors.begin(); it != actors.end(); )
     {
-        if (!(*it)->isAlive())
-        {
             delete *it;
-            auto kill = it;
-            it++;
-            actors.erase(kill);
-        }
-        else
+            it=actors.erase(it);
             it++;
     }
 }
