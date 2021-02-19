@@ -10,10 +10,16 @@ class Actor: public GraphObject
 {
 public:
     Actor(int imageID, double startX, double startY, int direction, double size, int depth,StudentWorld* myworld,int Yspeed, int Xspeed, bool value);
-  //  virtual int move();
+  
+    //Anything
     virtual void doSomething();
-    void updateStatus(int hp=0,int water=0,int speed=0);
-    void checkOffScreen();
+    void updateStatus(int hp=0,int water=0,int Yspeed=0, int Xspeed=0);
+    void checkOffScreen(Actor* theActor);
+    bool checkOverlap(Actor* A);
+    void move(Actor* A);
+    void doneDamaged(bool value);
+    bool hasDamaged();
+    void damageToGH(int damageDone);
     bool isAlive();
     
     //Getters
@@ -26,6 +32,7 @@ public:
     void sethealth(int hp);
     void setHolyWater(int water);
     void setAlive(bool value);
+    
     StudentWorld* getWorld();
     
 private:
@@ -36,7 +43,7 @@ private:
     int horiz_speed;
     
     bool alive;
-    
+    bool damage;
     StudentWorld* theworld;
 };
 
@@ -45,36 +52,36 @@ class GhostRacer: public Actor
 public:
     GhostRacer(double startX, double startY,StudentWorld* myworld);
     virtual void doSomething();
-    void move();
+    void move_algorithm();
     void swerveOff();
 private:
-    StudentWorld* theworld;
 };
 
 
 class BorderLine: public Actor
 {
 public:
-    BorderLine(int imageID, double startX, double startY, StudentWorld* myworld, GhostRacer* gh);
+    BorderLine(int imageID, double startX, double startY, StudentWorld* myworld);
     virtual void doSomething();
 private:
-    GhostRacer* m_gH;
 };
 
 class HolyWaterProjectiles: public Actor
 {
 public:
-    HolyWaterProjectiles(double x, double y, int direction,StudentWorld* myworld, GhostRacer* gh);
+    HolyWaterProjectiles(double x, double y, int direction,StudentWorld* myworld);
     virtual void doSomething();
 private:
-    GhostRacer* m_gh;
 };
 
 
 class ZombieCab: public Actor
 {
 public:
-    
+    ZombieCab(double x, double y, StudentWorld* myworld, GhostRacer* gh);
+    virtual void doSomething();
+private:
+    GhostRacer* m_gh;
 };
 
 class Pedestrian
@@ -92,9 +99,11 @@ class Zombie_Pedestrians
     
 };
 
-class OilSlicks
+class OilSlicks: public Actor
 {
-    
+public:
+    OilSlicks(double x, double y, StudentWorld* myworld);
+    virtual void doSomething();
 };
 
 
