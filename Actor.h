@@ -15,13 +15,14 @@ public:
     virtual void doSomething();
     void updateStatus(int hp=0,int water=0,int Yspeed=0, int Xspeed=0);
     void checkOffScreen(Actor* theActor);
-    bool checkOverlap(Actor* A);
+    bool checkOverlap(Actor* A, Actor* B);
+    void checkOverlapofHoly();
     void move(Actor* A);
     void doneDamaged(bool value);
     bool hasDamaged();
     void damageToGH(int damageDone);
     bool isAlive();
-    
+    bool isProj();
     //Getters
     int gethp();
     int getHolyWater();
@@ -32,7 +33,7 @@ public:
     void sethealth(int hp);
     void setHolyWater(int water);
     void setAlive(bool value);
-    
+    void setPorj(bool value);
     StudentWorld* getWorld();
     
 private:
@@ -44,6 +45,7 @@ private:
     
     bool alive;
     bool damage;
+    bool proj;
     StudentWorld* theworld;
 };
 
@@ -115,19 +117,28 @@ class LostSouls
     
 };
 
-class Goodies
+class Goodies: public Actor
 {
-    
+public:
+    Goodies(int imageID, double x, double y,int direction, double size, int depth,int Yspeed, int Xspeed, bool value,StudentWorld* myworld);
+    virtual void doSomething();
+private:
+  //  HolyWaterProjectiles* theProj;
 };
 
-class Healing_Goodies
+class Healing_Goodies: public Goodies
 {
-    
+public:
+    Healing_Goodies(double x, double y, StudentWorld* myworld);
+    virtual void doSomething();
 };
 
-class HolyWaterBottle_Goodies
+class HolyWaterBottle_Goodies: public Goodies
 {
-    
+public:
+    HolyWaterBottle_Goodies(double x, double y, StudentWorld* myworld);
+    virtual void doSomething();
+private:
 };
 
 #endif // ACTOR_H_
