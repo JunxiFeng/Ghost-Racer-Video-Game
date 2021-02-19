@@ -18,20 +18,61 @@ StudentWorld* Actor::getWorld()
     return theworld;
 }
 
-void Actor::updateStatus(int hp, int water, int speed)
+void Actor::doneDamaged(bool value)
 {
-    healthPoints=healthPoints+hp;
-    unitsofHolyWater=unitsofHolyWater+water;
-    vert_speed=vert_speed+speed;
+    damage=value;
 }
 
-void Actor::checkOffScreen()
+bool Actor::hasDamaged()
 {
-    if(getX()<0 || getY()<0 || getX()>VIEW_WIDTH || getY()>VIEW_HEIGHT)
+    return damage;
+}
+
+void Actor::damageToGH(int damageDone)
+{
+    updateStatus(-damageDone);
+   
+}
+
+void Actor::move(Actor *A)
+{
+        int vert_speed=A->getVertSpeed()-theworld->theGRverticalSpeed();
+        int horiz_speed=A->getHorizSpeed();
+        int new_y=A->getY()+vert_speed;
+        int new_x=A->getX()+horiz_speed;
+        moveTo(new_x, new_y);
+    checkOffScreen(A);
+}
+
+void Actor::checkOffScreen(Actor *theActor)
+{
+    if(theActor->getX()<0 ||theActor->getY()<0 ||theActor->getX()>VIEW_WIDTH ||theActor->getY()>VIEW_HEIGHT)
     {
        setAlive(false);
         return;
     }
+}
+
+void Actor::updateStatus(int hp, int water, int Yspeed, int Xspeed)
+{
+    healthPoints=healthPoints+hp;
+    unitsofHolyWater=unitsofHolyWater+water;
+    vert_speed=vert_speed+Yspeed;
+    horiz_speed=horiz_speed+Xspeed;
+}
+
+
+
+bool Actor::checkOverlap(Actor* A)
+{
+    auto ptr=theworld->theGRptr();
+    int delta_x=abs(A->getX()-ptr->getX());
+    int delta_y=abs(A->getY()-ptr->getY());
+    int radius_sum=A->getRadius()+ptr->getRadius();
+    if(delta_x < radius_sum*0.25 && delta_y < radius_sum*0.6)
+        return true;
+    else
+        return false;
 }
 
 bool Actor::isAlive()
@@ -85,10 +126,10 @@ GhostRacer::GhostRacer(double startX, double startY, StudentWorld* myworld): Act
 {
     sethealth(100);
     setHolyWater(10);
-    theworld=myworld;
 }
 
-void GhostRacer::move()
+
+void GhostRacer::move_algorithm()
 {
     int max_shift_per_tick = 4.0;
     int direction=getDirection();
@@ -107,14 +148,14 @@ void GhostRacer::swerveOff()
         if(getDirection()>90)
         {
             setDirection(82);
-            move();
+            move_algorithm();
         }
         else if(getDirection()<90)
         {
             setDirection(98);
-            move();
+            move_algorithm();
         }
-        updateStatus(-10,0,0);
+        updateStatus(-10);
         getWorld()->playSound(SOUND_VEHICLE_CRASH);
     }
 }
@@ -137,14 +178,14 @@ void GhostRacer::doSomething()
                 if(getDirection()<114)
                 {
                     setDirection(getDirection()+8);
-                    move();
+                  //  move_algorithm();
                 }
                 break;
             case KEY_PRESS_RIGHT:
                 if(getDirection()>66)
                 {
                     setDirection(getDirection()-8);
-                    move();
+                   // move_algorithm();
                 }
                 break;
             case KEY_PRESS_UP:
@@ -162,10 +203,10 @@ void GhostRacer::doSomething()
             case KEY_PRESS_SPACE:
                 if(getHolyWater()>=1)
                 {
-                theworld->holywaterproj(getX()+cos(getDirection()*M_PI/180),getY()+sin(getDirection()*M_PI/180), getDirection());
+                getWorld()->holywaterproj(getX()+cos(getDirection()*M_PI/180),getY()+sin(getDirection()*M_PI/180), getDirection());
                     
                     getWorld()->playSound(SOUND_PLAYER_SPRAY);
-                    updateStatus(0,-1,0);
+                    updateStatus(0,-1);
                 }
                 break;
             case KEY_PRESS_TAB:
@@ -176,40 +217,100 @@ void GhostRacer::doSomething()
                 break;
         }
     }
-    move();
+    move_algorithm();
 }
 
 // /////////// Border Line
-BorderLine::BorderLine(int imageID, double startX, double startY, StudentWorld* myworld, GhostRacer* gh):  Actor(imageID, startX, startY, 0, 2.0, 1, myworld,-4,0, true)
+BorderLine::BorderLine(int imageID, double startX, double startY, StudentWorld* myworld):  Actor(imageID, startX, startY, 0, 2.0, 1, myworld,-4,0, true)
 {
-    m_gH=gh;
+    
 }
 
 void BorderLine::doSomething()
 {
     Actor::doSomething();
-    int vert_speed=getVertSpeed()-m_gH->getVertSpeed();
-    int horiz_speed=getHorizSpeed();
-    int new_y=getY()+vert_speed;
-    int new_x=getX()+horiz_speed;
-    moveTo(new_x, new_y);
-    checkOffScreen();
+    move(this);
 }
 
 
 // //////////// Holy Water Projectile
-HolyWaterProjectiles::HolyWaterProjectiles(double x, double y, int direction,StudentWorld* myworld, GhostRacer* gh): Actor(IID_HOLY_WATER_PROJECTILE, x, y, direction,1.0, 1,myworld,0,0,true)
+HolyWaterProjectiles::HolyWaterProjectiles(double x, double y, int direction,StudentWorld* myworld): Actor(IID_HOLY_WATER_PROJECTILE, x, y, direction,1.0, 1,myworld,0,0,true)
 {
-    m_gh=gh;
 }
 
 void HolyWaterProjectiles::doSomething()
 {
-    if(!isAlive())
-        return;
+    auto ptr=getWorld()->theGRptr();
+    Actor::doSomething();
     moveForward(SPRITE_HEIGHT);
-    checkOffScreen();
-    int distance=sqrt(pow(getX()-m_gh->getX(), 2)+pow(getY()-m_gh->getY(), 2));
+    checkOffScreen(this);
+    int distance=sqrt(pow(getX()-ptr->getX(), 2)+pow(getY()-ptr->getY(), 2));
     if(distance>160)
         setAlive(false);
+}
+
+
+// ////////////// Zombie Cab
+ZombieCab::ZombieCab(double x, double y, StudentWorld* myworld, GhostRacer* gh): Actor(IID_ZOMBIE_CAB, x, y, 90, 4, 0, myworld, 0, 0, true)
+{
+    sethealth(3);
+    m_gh=gh;
+}
+
+void ZombieCab::doSomething()
+{
+    if(!isAlive())
+        return;
+   if(checkOverlap(this))
+   {
+       if(hasDamaged())
+           move(this);
+       else
+       {
+           getWorld()->playSound(SOUND_VEHICLE_CRASH);
+           updateStatus(-20,0,0);
+           doneDamaged(true);
+           //To the left
+           if((getX()+getRadius())<m_gh->getX() || getX()==m_gh->getX())
+           {
+               updateStatus(0,0,0,-5);//Horiz speed to -5
+               setDirection(60-randInt(0, 19));
+           }
+           //To the right
+           else if(getX()+getRadius()>m_gh->getX())
+           {
+               updateStatus(0,0,0,5);//Horiz speed to 5
+               setDirection(120+randInt(0, 19));
+           }
+       }
+   }
+    move(this);
+    if(this->getVertSpeed()>m_gh->getVertSpeed())
+    {
+        //Not Done
+    }
+}
+
+
+// //////////// Oil Slicks
+OilSlicks::OilSlicks(double x, double y, StudentWorld* myworld): Actor(IID_OIL_SLICK, x, y, 0, randInt(2, 5), 1, myworld, -4, 0, true)
+{
+}
+
+void OilSlicks::doSomething()
+{
+    auto ptr=getWorld()->theGRptr();
+    int RacerDirection=ptr->getDirection();
+    move(this);
+    if(checkOverlap(this))
+    {
+        int clockwise=randInt(5, 20);
+        int counterclockwise=randInt(-20, -5);
+        int delta_degree=randInt(counterclockwise, clockwise);
+        getWorld()->playSound(IID_OIL_SLICK);
+        if(RacerDirection>60 && RacerDirection<120)
+        {
+            ptr->setDirection(RacerDirection+delta_degree);
+        }
+    }
 }
