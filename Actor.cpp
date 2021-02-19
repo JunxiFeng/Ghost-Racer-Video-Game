@@ -61,23 +61,34 @@ void Actor::updateStatus(int hp, int water, int Yspeed, int Xspeed)
     horiz_speed=horiz_speed+Xspeed;
 }
 
-
-
-bool Actor::checkOverlap(Actor* A)
+bool Actor::checkOverlap(Actor* A, Actor* B)
 {
-    auto ptr=theworld->theGRptr();
-    int delta_x=abs(A->getX()-ptr->getX());
-    int delta_y=abs(A->getY()-ptr->getY());
-    int radius_sum=A->getRadius()+ptr->getRadius();
+   // auto ptr=theworld->theGRptr();
+    int delta_x=abs(A->getX()-B->getX());
+    int delta_y=abs(A->getY()-B->getY());
+    int radius_sum=A->getRadius()+B->getRadius();
     if(delta_x < radius_sum*0.25 && delta_y < radius_sum*0.6)
         return true;
     else
         return false;
 }
 
+void Actor::checkOverlapofHoly()
+{
+    if(getWorld()->checkOverlapofHoly(this))
+    {
+        setAlive(false);
+    }
+}
+
 bool Actor::isAlive()
 {
     return alive;
+}
+
+bool Actor::isProj()
+{
+    return proj;
 }
 
 void Actor::doSomething()
@@ -99,6 +110,11 @@ void Actor::sethealth(int hp)
 void Actor::setHolyWater(int water)
 {
     unitsofHolyWater=water;
+}
+
+void Actor::setPorj(bool value)
+{
+    proj=value;
 }
 
 int Actor::gethp()
@@ -236,6 +252,7 @@ void BorderLine::doSomething()
 // //////////// Holy Water Projectile
 HolyWaterProjectiles::HolyWaterProjectiles(double x, double y, int direction,StudentWorld* myworld): Actor(IID_HOLY_WATER_PROJECTILE, x, y, direction,1.0, 1,myworld,0,0,true)
 {
+    setPorj(true);
 }
 
 void HolyWaterProjectiles::doSomething()
@@ -259,9 +276,10 @@ ZombieCab::ZombieCab(double x, double y, StudentWorld* myworld, GhostRacer* gh):
 
 void ZombieCab::doSomething()
 {
+    auto ptr=getWorld()->theGRptr();
     if(!isAlive())
         return;
-   if(checkOverlap(this))
+   if(checkOverlap(this,ptr))
    {
        if(hasDamaged())
            move(this);
@@ -302,15 +320,64 @@ void OilSlicks::doSomething()
     auto ptr=getWorld()->theGRptr();
     int RacerDirection=ptr->getDirection();
     move(this);
-    if(checkOverlap(this))
+    if(checkOverlap(this,ptr))
     {
         int clockwise=randInt(5, 20);
         int counterclockwise=randInt(-20, -5);
         int delta_degree=randInt(counterclockwise, clockwise);
-        getWorld()->playSound(IID_OIL_SLICK);
+        getWorld()->playSound(SOUND_OIL_SLICK);
         if(RacerDirection>60 && RacerDirection<120)
         {
             ptr->setDirection(RacerDirection+delta_degree);
         }
     }
+}
+
+// ////////////// Goodies (Healing and Holywater)
+Goodies::Goodies(int imageID, double x, double y,int direction, double size, int depth,int Yspeed, int Xspeed, bool value,StudentWorld* myworld): Actor(imageID, x, y, direction, size, depth, myworld, Yspeed, Xspeed, value)
+{
+    
+}
+
+void Goodies::doSomething()
+{
+    move(this);
+    
+}
+
+Healing_Goodies::Healing_Goodies(double x, double y, StudentWorld* myworld): Goodies(IID_HEAL_GOODIE, x, y, 0, 1, 2, -4, 0, true, myworld)
+{
+    
+}
+
+void Healing_Goodies::doSomething()
+{
+    auto ptr=getWorld()->theGRptr();
+    Goodies::doSomething();
+    if(checkOverlap(this,ptr))
+    {
+        updateStatus(10);
+        setAlive(false);
+        getWorld()->playSound(SOUND_GOT_GOODIE);
+        getWorld()->increaseScore(250);
+    }
+    checkOverlapofHoly();
+}
+
+HolyWaterBottle_Goodies::HolyWaterBottle_Goodies(double x, double y, StudentWorld* myworld): Goodies(IID_HOLY_WATER_GOODIE, x, y, 0, 2, 2, -4, 0, true, myworld)
+{
+}
+
+void HolyWaterBottle_Goodies::doSomething()
+{
+    auto ptr=getWorld()->theGRptr();
+    Goodies::doSomething();
+    if(checkOverlap(this, ptr))
+    {
+        updateStatus(0,10);
+        setAlive(false);
+        getWorld()->playSound(SOUND_GOT_GOODIE);
+        getWorld()->increaseScore(50);
+    }
+    checkOverlapofHoly();
 }
