@@ -21,7 +21,9 @@ public:
     void setupBorderline();
     void addnewBorderline();
     void addnewOilSlicks();
-    void holywaterproj(int x, int y, int direction); 
+    void addHolyWaterGoodies();
+    void holywaterproj(int x, int y, int direction);
+    bool checkOverlapofHoly(Actor* theActor);
     void AlldoSomething();
     void RemoveDead();
     int theGRverticalSpeed();
