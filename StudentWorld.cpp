@@ -90,6 +90,17 @@ void StudentWorld::addnewOilSlicks()
     }
 }
 
+void StudentWorld::addHolyWaterGoodies()
+{
+    int ChanceOfHolyWater = 100+10*getLevel();
+    int LEFT_EDGE = ROAD_CENTER - ROAD_WIDTH/2;
+    int RIGHT_EDGE = ROAD_CENTER + ROAD_WIDTH/2;
+    if(randInt(0, ChanceOfHolyWater-1)==0)
+    {
+        actors.push_back(new HolyWaterBottle_Goodies(randInt(LEFT_EDGE, RIGHT_EDGE),VIEW_HEIGHT,this));
+    }
+}
+
 void StudentWorld::AlldoSomething()
 {
     list<Actor*>::iterator it=actors.begin();
@@ -122,12 +133,36 @@ void StudentWorld::RemoveDead()
       }
 }
 
+bool StudentWorld::checkOverlapofHoly(Actor* theActor)
+{
+    list<Actor*>:: iterator it=actors.begin();
+    while(it!=actors.end())
+    {
+        if((*it)->isProj())
+        {
+            int delta_x=abs((*it)->getX()- theActor->getX());
+            int delta_y=abs((*it)->getY()-theActor->getY());
+            int radius_sum=(*it)->getRadius()+theActor->getRadius();
+            if(delta_x < radius_sum*0.25 && delta_y < radius_sum*0.6)
+            {
+                (*it)->setAlive(false);
+                return true;
+            }
+            it++;
+        }
+        else
+            it++;
+    }
+    return false;
+}
+
 int StudentWorld::init()
 {
     lastWhiteY=224;
     theGR= new GhostRacer(128,32,this);
     
     setupBorderline();
+    
     
     return GWSTATUS_CONTINUE_GAME;
 }
@@ -146,7 +181,7 @@ int StudentWorld::move()
     RemoveDead();
     addnewBorderline();
     addnewOilSlicks();
-    
+    addHolyWaterGoodies();
     return GWSTATUS_CONTINUE_GAME;
 }
 
