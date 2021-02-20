@@ -9,7 +9,7 @@ class StudentWorld;
 class Actor: public GraphObject
 {
 public:
-    Actor(int imageID, double startX, double startY, int direction, double size, int depth,StudentWorld* myworld,int Yspeed, int Xspeed, bool value);
+    Actor(int imageID, double startX, double startY, int direction, double size, int depth,StudentWorld* myworld,int Yspeed, int Xspeed, bool value, bool collisionAvoidance);
   
     //Anything
     virtual void doSomething();
@@ -23,17 +23,22 @@ public:
     void damageToGH(int damageDone);
     bool isAlive();
     bool isProj();
+    bool isZombieCab();
+    bool isCollisionAvoidance();
     //Getters
     int gethp();
     int getHolyWater();
     int getHorizSpeed();
     int getVertSpeed();
+    int getPlanDistance();
     
     //Setters
     void sethealth(int hp);
     void setHolyWater(int water);
     void setAlive(bool value);
     void setPorj(bool value);
+    void setZombieCab(bool value);
+    void setPlanDistance(int value);
     StudentWorld* getWorld();
     
 private:
@@ -43,9 +48,13 @@ private:
     int vert_speed;
     int horiz_speed;
     
+    int planLength;
+    
     bool alive;
     bool damage;
     bool proj;
+    bool ZombieCab;
+    bool collision;
     StudentWorld* theworld;
 };
 
@@ -80,10 +89,9 @@ private:
 class ZombieCab: public Actor
 {
 public:
-    ZombieCab(double x, double y, StudentWorld* myworld, GhostRacer* gh);
+    ZombieCab(double x, double y, StudentWorld* myworld, int Yspeed);
     virtual void doSomething();
 private:
-    GhostRacer* m_gh;
 };
 
 class Pedestrian
@@ -108,19 +116,17 @@ public:
     virtual void doSomething();
 };
 
-
-
-
-
-class LostSouls
+class LostSouls: public Actor
 {
-    
+public:
+    LostSouls(double x, double y, StudentWorld* myworld);
+    virtual void doSomething();
 };
 
 class Goodies: public Actor
 {
 public:
-    Goodies(int imageID, double x, double y,int direction, double size, int depth,int Yspeed, int Xspeed, bool value,StudentWorld* myworld);
+    Goodies(int imageID, double x, double y,int direction, double size, int depth,int Yspeed, int Xspeed, bool value,StudentWorld* myworld, bool collision);
     virtual void doSomething();
 private:
   //  HolyWaterProjectiles* theProj;
