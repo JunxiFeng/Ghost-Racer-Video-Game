@@ -22,12 +22,21 @@ public:
     void addnewBorderline();
     void addnewOilSlicks();
     void addHolyWaterGoodies();
+    void addHealingGoodies(Actor* theActor);
+    void addLostSouls();
+    void addZombieCab();
     void holywaterproj(int x, int y, int direction);
     bool checkOverlapofHoly(Actor* theActor);
+    bool checkZombieCabFront();
+    bool checkZombieCabBehind();
     void AlldoSomething();
     void RemoveDead();
     int theGRverticalSpeed();
+    bool closestTOP();
+    bool closestBOT();
     GhostRacer* theGRptr();
+    
+    void MovementPlan();
 private:
     list<Actor*> actors;
     GhostRacer* theGR;
