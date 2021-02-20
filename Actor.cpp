@@ -5,12 +5,13 @@
 // Students:  Add code to this file, Actor.h, StudentWorld.h, and StudentWorld.cpp
 
 // ///////Base Class
-Actor::Actor(int imageID, double startX, double startY, int direction, double size, int depth,StudentWorld* myworld,int Yspeed, int Xspeed, bool value): GraphObject(imageID, startX, startY, direction, size, depth)
+Actor::Actor(int imageID, double startX, double startY, int direction, double size, int depth,StudentWorld* myworld,int Yspeed, int Xspeed, bool value,bool collisionAvoidance): GraphObject(imageID, startX, startY, direction, size, depth)
 {
     theworld=myworld;
     vert_speed=Yspeed;
     horiz_speed=Xspeed;
     alive=value;
+    collision=collisionAvoidance;
 }
 
 StudentWorld* Actor::getWorld()
@@ -63,7 +64,6 @@ void Actor::updateStatus(int hp, int water, int Yspeed, int Xspeed)
 
 bool Actor::checkOverlap(Actor* A, Actor* B)
 {
-   // auto ptr=theworld->theGRptr();
     int delta_x=abs(A->getX()-B->getX());
     int delta_y=abs(A->getY()-B->getY());
     int radius_sum=A->getRadius()+B->getRadius();
@@ -89,6 +89,16 @@ bool Actor::isAlive()
 bool Actor::isProj()
 {
     return proj;
+}
+
+bool Actor::isZombieCab()
+{
+    return ZombieCab;
+}
+
+bool Actor::isCollisionAvoidance()
+{
+    return collision;
 }
 
 void Actor::doSomething()
@@ -117,6 +127,16 @@ void Actor::setPorj(bool value)
     proj=value;
 }
 
+void Actor::setZombieCab(bool value)
+{
+    ZombieCab=value;
+}
+
+void Actor::setPlanDistance(int value)
+{
+    planLength=value;
+}
+
 int Actor::gethp()
 {
     return healthPoints;
@@ -137,8 +157,13 @@ int Actor::getHorizSpeed()
     return horiz_speed;
 }
 
+int Actor::getPlanDistance()
+{
+    return planLength;
+}
+
 // ///////////Ghost Racer
-GhostRacer::GhostRacer(double startX, double startY, StudentWorld* myworld): Actor(IID_GHOST_RACER, startX, startY, 90, 4.0, 0, myworld,0,0,true)
+GhostRacer::GhostRacer(double startX, double startY, StudentWorld* myworld): Actor(IID_GHOST_RACER, startX, startY, 90, 4.0, 0, myworld,0,0,true,true)
 {
     sethealth(100);
     setHolyWater(10);
@@ -237,9 +262,9 @@ void GhostRacer::doSomething()
 }
 
 // /////////// Border Line
-BorderLine::BorderLine(int imageID, double startX, double startY, StudentWorld* myworld):  Actor(imageID, startX, startY, 0, 2.0, 1, myworld,-4,0, true)
+BorderLine::BorderLine(int imageID, double startX, double startY, StudentWorld* myworld):  Actor(imageID, startX, startY, 0, 2.0, 1, myworld,-4,0, true,false)
 {
-    
+     
 }
 
 void BorderLine::doSomething()
@@ -250,7 +275,7 @@ void BorderLine::doSomething()
 
 
 // //////////// Holy Water Projectile
-HolyWaterProjectiles::HolyWaterProjectiles(double x, double y, int direction,StudentWorld* myworld): Actor(IID_HOLY_WATER_PROJECTILE, x, y, direction,1.0, 1,myworld,0,0,true)
+HolyWaterProjectiles::HolyWaterProjectiles(double x, double y, int direction,StudentWorld* myworld): Actor(IID_HOLY_WATER_PROJECTILE, x, y, direction,1.0, 1,myworld,0,0,true,false)
 {
     setPorj(true);
 }
@@ -268,50 +293,88 @@ void HolyWaterProjectiles::doSomething()
 
 
 // ////////////// Zombie Cab
-ZombieCab::ZombieCab(double x, double y, StudentWorld* myworld, GhostRacer* gh): Actor(IID_ZOMBIE_CAB, x, y, 90, 4, 0, myworld, 0, 0, true)
+ZombieCab::ZombieCab(double x, double y, StudentWorld* myworld, int Yspeed): Actor(IID_ZOMBIE_CAB, x, y, 90, 4, 0, myworld, Yspeed, 0, true,true)
 {
     sethealth(3);
-    m_gh=gh;
+    setZombieCab(true);
+    setPlanDistance(0);
 }
 
 void ZombieCab::doSomething()
 {
-    auto ptr=getWorld()->theGRptr();
+    GhostRacer* ptr=getWorld()->theGRptr();
     if(!isAlive())
         return;
    if(checkOverlap(this,ptr))
    {
-       if(hasDamaged())
-           move(this);
-       else
+     //  if(hasDamaged())
+         //  move(this);
+      // else
        {
            getWorld()->playSound(SOUND_VEHICLE_CRASH);
            updateStatus(-20,0,0);
            doneDamaged(true);
            //To the left
-           if((getX()+getRadius())<m_gh->getX() || getX()==m_gh->getX())
+           if(getX()<ptr->getX() || getX()==ptr->getX())
            {
-               updateStatus(0,0,0,-5);//Horiz speed to -5
+               updateStatus(0,0,0,-5);//Horiz speed= -5!! Wrong!!
                setDirection(60-randInt(0, 19));
            }
            //To the right
-           else if(getX()+getRadius()>m_gh->getX())
+           else if(getX()>ptr->getX())
            {
-               updateStatus(0,0,0,5);//Horiz speed to 5
+               updateStatus(0,0,0,5);//Horiz speed=5!!! Wrong!!!
                setDirection(120+randInt(0, 19));
            }
        }
    }
     move(this);
-    if(this->getVertSpeed()>m_gh->getVertSpeed())
+    //In front
+    if(this->getVertSpeed()>ptr->getVertSpeed())
     {
-        //Not Done
+        if(getWorld()->checkZombieCabFront())
+        {
+            updateStatus(0,0,-.5,0);
+            return;
+        }
     }
+    //Behind
+    if(this->getVertSpeed()<=ptr->getVertSpeed())
+    {
+        if(getWorld()->checkZombieCabBehind())
+        {
+            updateStatus(0,0,.5,0);
+            return;
+        }
+    }
+    //When damaged
+    if(getWorld()->checkOverlapofHoly(this))
+    {
+        updateStatus(-1);
+        if(this->gethp()<=0)
+        {
+            setAlive(false);
+            getWorld()->playSound(SOUND_PED_DIE);
+            getWorld()->addHealingGoodies(this);
+            getWorld()->increaseScore(200);
+            return;
+        }
+        else if(this->gethp()>0)
+            getWorld()->playSound(SOUND_VEHICLE_HURT);
+    }
+    if(getPlanDistance()>0)
+        return;
+    else
+    {
+        setPlanDistance(randInt(4, 32));
+        updateStatus(0,0,randInt(-2, 2),0);
+    }
+    
 }
 
 
 // //////////// Oil Slicks
-OilSlicks::OilSlicks(double x, double y, StudentWorld* myworld): Actor(IID_OIL_SLICK, x, y, 0, randInt(2, 5), 1, myworld, -4, 0, true)
+OilSlicks::OilSlicks(double x, double y, StudentWorld* myworld): Actor(IID_OIL_SLICK, x, y, 0, randInt(2, 5), 1, myworld, -4, 0, true,false)
 {
 }
 
@@ -323,10 +386,10 @@ void OilSlicks::doSomething()
     if(checkOverlap(this,ptr))
     {
         int clockwise=randInt(5, 20);
-        int counterclockwise=randInt(-20, -5);
+        int counterclockwise=randInt(-5, -20);
         int delta_degree=randInt(counterclockwise, clockwise);
         getWorld()->playSound(SOUND_OIL_SLICK);
-        if(RacerDirection>60 && RacerDirection<120)
+        if(RacerDirection>=60 && RacerDirection<=120)
         {
             ptr->setDirection(RacerDirection+delta_degree);
         }
@@ -334,7 +397,7 @@ void OilSlicks::doSomething()
 }
 
 // ////////////// Goodies (Healing and Holywater)
-Goodies::Goodies(int imageID, double x, double y,int direction, double size, int depth,int Yspeed, int Xspeed, bool value,StudentWorld* myworld): Actor(imageID, x, y, direction, size, depth, myworld, Yspeed, Xspeed, value)
+Goodies::Goodies(int imageID, double x, double y,int direction, double size, int depth,int Yspeed, int Xspeed, bool value,StudentWorld* myworld, bool collision): Actor(imageID, x, y, direction, size, depth, myworld, Yspeed, Xspeed, value,collision)
 {
     
 }
@@ -342,10 +405,9 @@ Goodies::Goodies(int imageID, double x, double y,int direction, double size, int
 void Goodies::doSomething()
 {
     move(this);
-    
 }
 
-Healing_Goodies::Healing_Goodies(double x, double y, StudentWorld* myworld): Goodies(IID_HEAL_GOODIE, x, y, 0, 1, 2, -4, 0, true, myworld)
+Healing_Goodies::Healing_Goodies(double x, double y, StudentWorld* myworld): Goodies(IID_HEAL_GOODIE, x, y, 0, 1, 2, -4, 0, true, myworld,false)
 {
     
 }
@@ -364,7 +426,7 @@ void Healing_Goodies::doSomething()
     checkOverlapofHoly();
 }
 
-HolyWaterBottle_Goodies::HolyWaterBottle_Goodies(double x, double y, StudentWorld* myworld): Goodies(IID_HOLY_WATER_GOODIE, x, y, 0, 2, 2, -4, 0, true, myworld)
+HolyWaterBottle_Goodies::HolyWaterBottle_Goodies(double x, double y, StudentWorld* myworld): Goodies(IID_HOLY_WATER_GOODIE, x, y, 0, 2, 2, -4, 0, true, myworld,false)
 {
 }
 
@@ -380,4 +442,22 @@ void HolyWaterBottle_Goodies::doSomething()
         getWorld()->increaseScore(50);
     }
     checkOverlapofHoly();
+}
+
+// ////////////// Soul
+LostSouls::LostSouls(double x, double y, StudentWorld* myworld): Actor(IID_SOUL_GOODIE, x, y, 0, 4, 2, myworld, -4, 0, true,false)
+{
+}
+
+void LostSouls::doSomething()
+{
+    auto ptr=getWorld()->theGRptr();
+    move(this);
+    if(checkOverlap(this, ptr))
+    {
+        setAlive(false);
+        getWorld()->playSound(SOUND_GOT_SOUL);
+        getWorld()->increaseScore(100);
+    }
+    setDirection(getDirection()+10);
 }
